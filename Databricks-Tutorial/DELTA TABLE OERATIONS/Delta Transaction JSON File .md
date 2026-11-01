@@ -1,4 +1,4 @@
-# Delta Transaction JSON File
+# Delta Transaction JSON File 
 
 ## 1. What is a Delta JSON commit file?
 
