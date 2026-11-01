@@ -296,7 +296,114 @@ A compact snapshot of transaction-log state.
 
 The physical table rows.
 
-## 12. Core mental model
+## 12. How Does Delta Determine the Current Table?
+
+The ultimate purpose of the Delta transaction log JSON files is to determine the **current logical state of the table**.
+
+### Version 0
+
+```text
+0000.json
+
+ADD A
+ADD B
+```
+
+Current state:
+
+```text
+A B
+```
+
+### Version 1
+
+```text
+0001.json
+
+ADD C
+```
+
+Current state:
+
+```text
+A B C
+```
+
+### Version 2
+
+```text
+0002.json
+
+REMOVE B
+ADD D
+```
+
+Current state:
+
+```text
+A C D
+```
+
+### How Delta Builds the Current Table
+
+Conceptually:
+
+```text
+                  Transaction Log
+                        │
+             ┌──────────┴──────────┐
+             ↓                     ↓
+         ADD actions           REMOVE actions
+             │                     │
+             └──────────┬──────────┘
+                        ↓
+                  Active file set
+                        │
+                        ↓
+                Current Delta Table
+                        │
+                        ↓
+                 Read Parquet files
+```
+
+### Key Concept: Active File Set
+
+The **active file set** is the critical concept.
+
+It represents the set of Parquet data files that currently belong to the logical Delta table.
+
+Delta determines the current table by applying the transaction-log changes across versions:
+
+- `ADD` → file becomes part of the active file set.
+- `REMOVE` → file is removed from the active file set.
+- The remaining active files make up the current logical Delta table.
+
+#### Example
+
+```text
+Version 0:
+ADD A
+ADD B
+→ Active files = {A, B}
+
+Version 1:
+ADD C
+→ Active files = {A, B, C}
+
+Version 2:
+REMOVE B
+ADD D
+→ Active files = {A, C, D}
+```
+
+Therefore:
+
+> **Current Delta Table = Active File Set derived from the Transaction Log**
+
+The Parquet files contain the actual data, while the transaction log determines **which Parquet files are currently part of the table**.
+
+
+## 13. Core mental model
 
 > **Delta stores physical data in Parquet files and maintains a transaction log that describes which files are added or removed and what the table's metadata/protocol state is. By processing the transaction log, Delta derives the logical set of active Parquet files for a particular table version.**
 
