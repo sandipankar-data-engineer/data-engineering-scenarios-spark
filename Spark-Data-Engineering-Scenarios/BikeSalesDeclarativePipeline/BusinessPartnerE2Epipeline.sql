@@ -7,6 +7,7 @@ FROM STREAM read_files(
     format => 'csv'
 );
 
+
 -- Silver
 CREATE OR REFRESH STREAMING TABLE
     bikesales.silver.business_parter_silver_dp AS
