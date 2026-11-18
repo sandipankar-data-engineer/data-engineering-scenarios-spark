@@ -9,8 +9,13 @@ FROM STREAM read_files(
 
 
 -- Silver
-CREATE OR REFRESH STREAMING TABLE
-    bikesales.silver.business_parter_silver_dp AS
+CREATE OR REFRESH STREAMING TABLE bikesales.silver.business_parter_silver_dp
+(
+    CONSTRAINT "currency_non_euro" EXPECT (CURRENCY NOT IN ('EUR')) ON VIOLATION WARN,
+    CONSTRAINT "phone_no" EXPECT (PHONENUMBER >= 10) ON VIOLATION DROP ROW,
+    CONSTRAINT "bp_id" EXPECT (PARTNERID IS NOT NULL) ON VIOLATION FAIL UPDATE
+)
+ AS
 SELECT *
 FROM STREAM bikesales.bronze.business_parter_bronze_dp;
 
